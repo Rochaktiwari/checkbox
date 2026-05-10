@@ -42,11 +42,25 @@ socket.on("server:presence", (payload) => {
 });
 
 socket.on("server:checkbox:change", (payload) => {
-  if (!Number.isInteger(payload.index)) return;
+  console.log("[Socket] Incoming payload:", payload);
+  if (!Number.isInteger(payload.index)) {
+    console.error("[Socket] Received invalid index:", payload.index);
+    return;
+  }
 
   state.checkedByIndex.set(payload.index, Boolean(payload.checked));
   const checkbox = document.getElementById(`checkbox-${payload.index}`);
-  if (checkbox) checkbox.checked = Boolean(payload.checked);
+  
+  if (checkbox) {
+    console.log(`[UI] Updating checkbox ${payload.index} to ${payload.checked}`);
+    checkbox.checked = Boolean(payload.checked);
+  } else {
+    console.log(`[UI] Checkbox ${payload.index} is not rendered, skipping DOM update`);
+  }
+
+  if (payload.totalChecked !== undefined && payload.totalChecked !== null) {
+    elements.checkedMetric.textContent = formatNumber(payload.totalChecked);
+  }
 });
 
 socket.on("server:error", (payload) => {
@@ -132,8 +146,7 @@ function renderRangeMetric() {
 function handleCheckboxChange(event) {
   const index = Number.parseInt(event.target.dataset.index, 10);
   const checked = event.target.checked;
-  state.checkedByIndex.set(index, checked);
-
+  
   socket.emit("client:checkbox:change", { index, checked });
 }
 
@@ -145,6 +158,8 @@ function refreshRenderedCheckboxes() {
     }
   });
 }
+
+
 
 function showToast(message) {
   elements.toast.textContent = message;

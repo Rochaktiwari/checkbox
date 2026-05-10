@@ -15,3 +15,8 @@ function connectToRedis() {
 export const redis = connectToRedis();
 export const publisher = connectToRedis();
 export const subscriber = connectToRedis();
+
+[redis, publisher, subscriber].forEach((client, i) => {
+  client.on("error", (err) => console.error(`[Redis ${i}] Connection Error:`, err));
+  client.on("connect", () => console.log(`[Redis ${i}] Connected successfully`));
+});

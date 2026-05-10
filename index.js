@@ -10,7 +10,7 @@ import {
   isValidCheckboxIndex,
   setCheckboxState,
 } from "./src/checkboxStore.js";
-import { subscriber, publisher } from "./src/redis.js";
+import { subscriber, publisher, redis } from "./src/redis.js";
 import { checkRateLimit, httpRateLimit } from "./src/rateLimit.js";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -87,6 +87,10 @@ app.post("/api/checkboxes/:index", async (req, res, next) => {
       checked,
       sourceSocketId: null,
     });
+    
+    // Immediate local broadcast
+    io.emit("server:checkbox:change", update);
+    
     res.json(update);
   } catch (error) {
     next(error);
@@ -109,7 +113,12 @@ subscriber.on("message", (channel, message) => {
 
   try {
     const event = JSON.parse(message);
-    io.emit("server:checkbox:change", event);
+    
+    // Only broadcast if it didn't originate from this instance's socket handler
+    // (which already did a local broadcast for speed)
+    if (event.serverId !== config.serverId) {
+      io.emit("server:checkbox:change", event);
+    }
   } catch (error) {
     console.error("Failed to handle Redis Pub/Sub message", error);
   }
@@ -124,10 +133,12 @@ io.on("connection", (socket) => {
   broadcastPresence();
 
   socket.on("client:checkbox:change", async (data) => {
+    console.log(`[Socket] Received toggle request for index ${data?.index} (checked: ${data?.checked})`);
     try {
       const index = Number.parseInt(data?.index, 10);
       const checked = Boolean(data?.checked);
       if (!isValidCheckboxIndex(index)) {
+        console.warn(`[Socket] Invalid index: ${index}`);
         socket.emit("server:error", { error: "Invalid checkbox index." });
         return;
       }
@@ -140,21 +151,25 @@ io.on("connection", (socket) => {
       });
 
       if (!socketLimit.allowed) {
+        console.warn(`[Socket] Rate limit hit for ${socket.id}`);
         socket.emit("server:error", {
-          error: "Too many checkbox updates. Please slow down.",
+          error: "Too many updates. Slow down!",
           retryAfterSeconds: socketLimit.retryAfterSeconds,
         });
         return;
       }
 
-      await persistAndPublishCheckboxChange({
+      const update = await persistAndPublishCheckboxChange({
         index,
         checked,
         sourceSocketId: socket.id,
       });
+
+      console.log(`[Socket] Broadcasting update for ${index} to all clients`);
+      io.emit("server:checkbox:change", update);
     } catch (error) {
-      console.error("Socket checkbox update failed", error);
-      socket.emit("server:error", { error: "Could not save that update." });
+      console.error("[Socket] Error processing toggle:", error);
+      socket.emit("server:error", { error: `Server error: ${error.message}` });
     }
   });
 
@@ -185,15 +200,22 @@ async function persistAndPublishCheckboxChange({
   sourceSocketId,
 }) {
   const result = await setCheckboxState(index, checked);
+  
+  // Fetch total count in parallel or safely to not block the broadcast
+  let totalChecked;
+  try {
+    totalChecked = await redis.bitcount(config.checkboxes.bitmapKey);
+  } catch (err) {
+    console.error("Failed to count bits", err);
+  }
+  
   const event = {
     index,
     checked,
     previous: result.previous,
     changed: result.changed,
-    changedBy: {
-      id: "guest",
-      name: "Guest",
-    },
+    totalChecked,
+    changedBy: { id: "guest", name: "Guest" },
     sourceSocketId,
     serverId: config.serverId,
     at: new Date().toISOString(),
