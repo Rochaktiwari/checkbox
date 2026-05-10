@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>One Million Checkboxes</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>Rochak's One Million Checkboxes</h1>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero-section">
+        <h2 class="hero-title">
+          Toggle with
+          <span>One Million.</span>
+        </h2>
+        <p class="hero-subtitle">
+          A high-performance real-time checkbox grid powered by Redis and Socket.io. 
+          Join thousands of users in toggling one million checkboxes simultaneously.
+        </p>
+      </section>
+
+      <section class="status-band" aria-live="polite">
+        <div class="status-card">
+          <span class="metric" id="checkedMetric">0</span>
+          <span class="label">checked</span>
+        </div>
+        <div class="status-card">
+          <span class="metric" id="rangeMetric">0-0</span>
+          <span class="label">visible range</span>
+        </div>
+        <div class="status-card">
+          <span class="metric" id="presenceMetric">0</span>
+          <span class="label">connected users</span>
+        </div>
+        <div class="status-card">
+          <span class="metric" id="socketMetric">offline</span>
+          <span class="label">socket status</span>
+        </div>
+      </section>
+
+      <section class="grid-wrap" aria-label="Checkbox window">
+        <div id="grid" class="checkbox-grid"></div>
+        <div id="loadStatus" class="load-status">Loading checkboxes...</div>
+      </section>
+    </main>
+
+    <footer class="app-footer">
+      <div class="footer-content">
+        <p>Built by <a href="https://rochaktiwari.online" target="_blank">Rochak Tiwari</a></p>
+        <div class="social-links">
+          <a href="https://x.com/Rochak__tiwari" target="_blank">Twitter</a>
+          <a href="https://www.linkedin.com/in/rochak-tiwari/" target="_blank">LinkedIn</a>
+          <a href="https://rochaktiwari.online" target="_blank">Website</a>
+        </div>
+      </div>
+    </footer>
+
+    <div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

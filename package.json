@@ -1,0 +1,25 @@
+{
+  "name": "checkbox",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "check": "node --check index.js"
+  },
+  "keywords": [],
+  "author": "Rochak Tiwari",
+  "license": "ISC",
+  "dependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^25.6.0",
+    "express": "^5.2.1",
+    "ioredis": "^5.10.1",
+    "socket.io": "^4.8.3"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  }
+}
